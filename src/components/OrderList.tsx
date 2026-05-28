@@ -41,6 +41,76 @@ export default function OrderList({ orders, menu, onEdit, onDelete, onRefresh, i
     );
   }, [orders, searchTerm]);
 
+  // 下載 Excel/Google 試算表 CSV 檔功能
+  const downloadCSV = () => {
+    if (orders.length === 0) {
+      alert("目前還沒有任何訂單可以下載喔！");
+      return;
+    }
+    
+    // CSV 檔頭加 UTF-8 BOM 確保 Windows Excel 開啟不會產生中文亂碼
+    let csvContent = "\uFEFF";
+    csvContent += "訂單編號,訂購人,飲料品項,甜度,冰塊,數量,總金額\n";
+    
+    orders.forEach((ord, index) => {
+      const id = ord.orderId ? ord.orderId.slice(0, 8) : `${index + 1}`;
+      const name = `"${ord.name.replace(/"/g, '""')}"`;
+      const drink = `"${ord.drink.replace(/"/g, '""')}"`;
+      const sugar = `"${ord.sugar}"`;
+      const ice = `"${ord.ice}"`;
+      csvContent += `${id},${name},${drink},${sugar},${ice},${ord.quantity},${ord.totalPrice}\n`;
+    });
+    
+    // 總結算行
+    csvContent += `\n總計,,,,,${stats.totalCups}杯,NT$ ${stats.totalPrice}\n`;
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const today = new Date().toISOString().split('T')[0];
+    link.setAttribute("href", url);
+    link.setAttribute("download", `下午茶飲料訂單_${today}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // 下載 LINE/Slack 一鍵複製文字檔功能
+  const downloadTXT = () => {
+    if (orders.length === 0) {
+      alert("目前還沒有任何訂單可以下載喔！");
+      return;
+    }
+    
+    const today = new Date().toISOString().split('T')[0];
+    let txtContent = `🧋 辦公室下午茶訂單明細 (${today}) 🧋\n`;
+    txtContent += `========================================\n\n`;
+    
+    orders.forEach((ord, index) => {
+      const id = ord.orderId ? ord.orderId.slice(0, 5) : `${index + 1}`;
+      txtContent += `[#${id}] ${ord.name}: ${ord.drink} (${ord.sugar}/${ord.ice}) x ${ord.quantity}杯 -> 共 NT$ ${ord.totalPrice}\n`;
+    });
+    
+    txtContent += `\n========================================\n`;
+    txtContent += `📊 點單快速統計 (飲料店下單專用):\n`;
+    Object.entries(stats.drinkBreakdown).forEach(([drink, cups]) => {
+      txtContent += `   - ${drink}: ${cups} 杯\n`;
+    });
+    
+    txtContent += `\n🔥 總計: ${stats.totalCups} 杯 | 總金額: NT$ ${stats.totalPrice} 元\n`;
+
+    const blob = new Blob([txtContent], { type: "text/plain;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `下午茶飲料訂單_${today}.txt`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6">
       {/* 本日亮點統計板 (Bento Style Stats) */}
@@ -105,20 +175,43 @@ export default function OrderList({ orders, menu, onEdit, onDelete, onRefresh, i
             </div>
           </div>
 
-          {/* 搜尋欄位 */}
-          <div className="relative max-w-xs w-full">
-            <input
-              type="text"
-              placeholder="搜尋名字或品項..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 border border-slate-900/10 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white/80 hover:bg-white rounded-xl text-xs font-semibold font-medium text-slate-700 placeholder-slate-400 transition-all"
-            />
-            <span className="absolute left-3.5 top-2.5 text-slate-400">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </span>
+          {/* 搜尋與下載功能區 */}
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 max-w-lg w-full justify-end">
+            {/* 搜尋欄位 */}
+            <div className="relative flex-grow max-w-xs w-full sm:w-auto">
+              <input
+                type="text"
+                placeholder="搜尋名字或品項..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 border border-slate-900/10 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white/80 hover:bg-white rounded-xl text-xs font-semibold font-medium text-slate-700 placeholder-slate-400 transition-all"
+              />
+              <span className="absolute left-3.5 top-2.5 text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </span>
+            </div>
+            
+            {/* 下載按鈕組 */}
+            {orders.length > 0 && (
+              <div className="flex gap-1.5 shrink-0 w-full sm:w-auto justify-end">
+                <button
+                  onClick={downloadTXT}
+                  title="下載 LINE/Slack 文字格式明細"
+                  className="px-3 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-slate-700 hover:text-slate-900 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95 flex items-center gap-1.5"
+                >
+                  📋 文字複製明細
+                </button>
+                <button
+                  onClick={downloadCSV}
+                  title="下載 Excel/Google 試算表 CSV 檔"
+                  className="px-3 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200/60 text-blue-600 hover:text-blue-800 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95 flex items-center gap-1.5"
+                >
+                  📊 下載 CSV (Excel)
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
