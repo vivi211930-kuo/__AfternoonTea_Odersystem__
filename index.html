@@ -13,6 +13,19 @@
   <!-- React 18, React DOM 18, Babel Standalone -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Suppress in-browser Babel warning -->
+  <script>
+    (function() {
+      const originalWarn = console.warn;
+      console.warn = function(...args) {
+        if (args[0] && typeof args[0] === 'string' && args[0].includes('You are using the in-browser Babel transformer')) {
+          return;
+        }
+        originalWarn.apply(console, args);
+      };
+    })();
+  </script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
   <!-- Tailwind CSS CDN -->
@@ -189,6 +202,11 @@
       Bag: ({ className = "w-5 h-5" }) => (
         <svg xmlns="http://www.w3.org/2000/svg" class={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
           <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+        </svg>
+      ),
+      Download: ({ className = "w-4 h-4 inline-block" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" class={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
         </svg>
       )
     };
@@ -483,6 +501,55 @@
         return { totalCups, totalPrice, drinkBreakdown };
       }, [orders]);
 
+      // 下載今日訂單 CSV 功能
+      const handleDownloadCSV = () => {
+        if (orders.length === 0) {
+          alert("目前還沒有任何訂單可以下載唷！");
+          return;
+        }
+
+        // 定義表頭
+        const headers = ["訂購人", "品項", "甜度", "冰塊", "數量(杯)", "一單金額(元)"];
+        const rows = orders.map(ord => [
+          ord.name,
+          ord.drink,
+          ord.sugar,
+          ord.ice,
+          ord.quantity,
+          ord.totalPrice
+        ]);
+
+        // 加上統計摘要
+        const summaryRows = [
+          [],
+          ["📊 【今日訂購統計彙總】"],
+          ["總品項數", orders.length, "筆"],
+          ["統計總杯數", stats.totalCups, "杯"],
+          ["合計應付總額", stats.totalPrice, "元"],
+          [],
+          ["🥤 【品項合計統計】"],
+          ["飲料名稱", "點單數量"],
+          ...Object.entries(stats.drinkBreakdown).map(([drink, cups]) => [drink, `${cups} 杯`])
+        ];
+
+        // 拼接成 UTF-8 與 BOM 頭防中文亂碼
+        const csvContent = "\uFEFF" + [headers, ...rows, ...summaryRows]
+          .map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))
+          .join("\n");
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        link.setAttribute("href", url);
+        link.setAttribute("download", `${todayStr}_辦公室飲料訂單明細與彙總表.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+
       // 搜尋關鍵字過濾
       const filteredOrders = useMemo(() => {
         if (!searchTerm.trim()) return orders;
@@ -557,20 +624,32 @@
                 </div>
               </div>
 
-              {/* 搜尋欄位 */}
-              <div class="relative max-w-xs w-full">
-                <input
-                  type="text"
-                  placeholder="搜尋名字或品項..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  class="w-full pl-9 pr-4 py-2 border border-slate-900/10 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white/80 hover:bg-white rounded-xl text-xs font-semibold font-medium text-slate-700 placeholder-slate-400 transition-all"
-                />
-                <span class="absolute left-3.5 top-2.5 text-slate-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </span>
+              {/* 搜尋欄位與下載按鈕 */}
+              <div class="flex items-center gap-2 max-w-md w-full sm:w-auto">
+                <div class="relative flex-grow">
+                  <input
+                    type="text"
+                    placeholder="搜尋名字或品項..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    class="w-full pl-9 pr-4 py-2 border border-slate-900/10 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white/80 hover:bg-white rounded-xl text-xs font-semibold font-medium text-slate-700 placeholder-slate-400 transition-all font-sans"
+                  />
+                  <span class="absolute left-3 top-2.5 text-slate-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </span>
+                </div>
+
+                <button
+                  onClick={handleDownloadCSV}
+                  disabled={orders.length === 0}
+                  class="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer disabled:cursor-not-allowed whitespace-nowrap active:scale-95"
+                  title="下載 CSV 訂單清單與統計表"
+                >
+                  <Icon.Download />
+                  <span>下載明細</span>
+                </button>
               </div>
             </div>
 
