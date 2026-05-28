@@ -1,0 +1,6 @@
+{
+  "name": "辦公室飲料訂購系統",
+  "description": "精美、極簡、響應式的辦公室每日飲料集單系統，支援當日自適應選單分頁，並透過 Google Apps Script 即時同步工作表資料。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
