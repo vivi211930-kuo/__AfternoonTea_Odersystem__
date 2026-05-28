@@ -1,1 +1,64 @@
 @import "tailwindcss";
+
+@theme {
+  --color-milktea-50: #FAF7F2;
+  --color-milktea-100: #F4EDE0;
+  --color-milktea-200: #E9DEC9;
+  --color-milktea-300: #DABFA2;
+  --color-milktea-405: #C79E7B;
+  --color-milktea-500: #AF825C;
+  --color-milktea-600: #946A47;
+  --color-milktea-700: #7A5436;
+  --color-milktea-800: #5F3E26;
+  --color-milktea-900: #402614;
+  --color-milktea-950: #251408;
+
+  --color-matcha-50: #F5F7F2;
+  --color-matcha-100: #E8EFE1;
+  --color-matcha-200: #CFDEC0;
+  --color-matcha-300: #AFC69B;
+  --color-matcha-400: #8EAA75;
+  --color-matcha-505: #6C8C52;
+  --color-matcha-600: #54713E;
+  --color-matcha-700: #40562F;
+  --color-matcha-800: #2E3D21;
+  --color-matcha-900: #1D2714;
+
+  --font-sans: 'Inter', "Noto Sans TC", ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-custom-sm: 0 2px 8px rgba(30, 41, 59, 0.03);
+  --shadow-custom: 0 10px 30px -10px rgba(30, 41, 59, 0.06);
+  --shadow-custom-lg: 0 20px 40px -15px rgba(30, 41, 59, 0.1);
+  --shadow-custom-inset: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 50%, #eff6ff 100%);
+  background-attachment: fixed;
+}
+
+/* Elegant custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #93c5fd;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #60a5fa;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.02); }
+}
+.pulse-effect {
+  animation: pulse-slow 3s infinite ease-in-out;
+}
